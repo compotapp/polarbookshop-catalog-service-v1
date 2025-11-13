@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: catalog-service
+
+server:
+ port: 9001
+ tomcat:
+#  тайм-аут соединения: 2 с
+   connection-timeout: 2s
+#  тайм-аут поддержания активности: 15 с
+   keep-alive-timeout: 15s
+   threads:
+    max: 50
+    min-spare: 5
