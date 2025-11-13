@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-edge-service
+  labels:
+    app: pbs-edge-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pbs-edge-service
+  template:
+    metadata:
+      labels:
+        app: pbs-edge-service
+    spec:
+      containers:
+        - name: pbs-edge-service
+          image: goppot/pbs-edge-service:1.0.0
+          #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
+          imagePullPolicy: IfNotPresent
+          #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 5" ]
+          ports:
+            - containerPort: 9000
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: SPRING_CLOUD_CONFIG_URI
+              value: http://pbs-config-service:8888/books
+            - name: CATALOG_SERVICE_URL
+              value: http://pbs-catalog-service:9001
+            - name: ORDER_SERVICE_URL
+              value: http://pbs-order-service:9002/orders
+            - name: SPRING_DATA_REDIS_HOST
+              value: pbs-redis
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-edge-service
+  labels:
+    app: pbs-edge-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pbs-edge-service
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+
+#kubectl apply -f k8s/manifest/edge-service.yaml

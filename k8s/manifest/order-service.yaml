@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-order-service
+  labels:
+    app: pbs-order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pbs-order-service
+  template:
+    metadata:
+      labels:
+        app: pbs-order-service
+    spec:
+      containers:
+        - name: pbs-order-service
+          image: goppot/pbs-order-service:1.0.0
+          #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
+          imagePullPolicy: IfNotPresent
+          #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 5" ]
+          ports:
+            - containerPort: 9002
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: SPRING_R2DBC_URL
+              value: r2dbc:postgresql://pbs-postgres:5432/polardb_order
+            - name: SPRING_FLYWAY_URL
+              value: jdbc:postgresql://pbs-postgres:5432/polardb_order
+            - name: SPRING_CLOUD_CONFIG_URI
+              value: http://pbs-config-service:8888
+            - name: POLAR_CATALOG_SERVICE_URI
+              value: http://pbs-catalog-service:9001
+            - name: SPRING_RABBITMQ_HOST
+              value: pbs-rabbitmq-service
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-order-service
+  labels:
+    app: pbs-order-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pbs-order-service
+  ports:
+    - protocol: TCP
+      port: 9002
+      targetPort: 9002
+
+#kubectl apply -f k8s/manifest/order-service.yaml

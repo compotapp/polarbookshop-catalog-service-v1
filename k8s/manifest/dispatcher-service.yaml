@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-dispatcher-service
+  labels:
+    app: pbs-dispatcher-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pbs-dispatcher-service
+  template:
+    metadata:
+      labels:
+        app: pbs-dispatcher-service
+    spec:
+      containers:
+        - name: pbs-dispatcher-service
+          image: goppot/pbs-dispatcher-service:1.0.0
+          #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
+          imagePullPolicy: IfNotPresent
+          #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 5" ]
+          ports:
+            - containerPort: 9003
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: SPRING_RABBITMQ_HOST
+              value: pbs-rabbitmq
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-dispatcher-service
+  labels:
+    app: pbs-dispatcher-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pbs-dispatcher-service
+  ports:
+    - protocol: TCP
+      port: 9003
+      targetPort: 9003
+
+#kubectl apply -f k8s/manifest/dispatcher-service.yaml

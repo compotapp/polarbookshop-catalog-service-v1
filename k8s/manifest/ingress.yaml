@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pbs-ingress
+spec:
+  #Настраивает входной контроллер, отвечающий за управление этим объектом.
+  ingressClassName: nginx
+  rules:
+      #Правила входящего трафика для HTTP-трафика
+    - http:
+        paths:
+            #Правило по умолчанию для всех запросов
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                #Имя объекта Сервиса, куда следует перенаправлять трафик.
+                name: pbs-edge-service
+                port:
+                  #Номер порта Сервиса, на который должен перенаправляться трафик.
+                  number: 9000
+
+#kubectl apply -f k8s/manifest/ingress.yaml

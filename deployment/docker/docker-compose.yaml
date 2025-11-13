@@ -1,0 +1,103 @@
+#version: "3.8"                          Docker Compose Syntax версия
+#services:                               Раздел, содержащий все контейнеры для запуска.
+#  catalog-service:                      Раздел, описывающий контейнер службы каталога
+#    depends_on:                         Служба каталогов должна запускаться после базы данных PostgreSQL
+#      - polar-postgres
+#    image: "catalog-service"            Образ, используемый для запуска контейнера
+#    container_name: "catalog-service"   Имя контейнера
+#    ports:                              Раздел со списком сопоставлений портов
+#      - 9001:9001                       порт приложения
+#      - 8001:8001                       порт отладки
+#    environment:                        В разделе перечислены переменные среды
+#      - BPL_JVM_THREAD_COUNT=50         Переменная среды Paketo Buildpacks для настройки количества потоков для расчета памяти
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://polar-postgres:5432/polardb_catalog
+#      - SPRING_PROFILES_ACTIVE=testdata Включает пружинный профиль «TestData»
+#  polar-postgres:                       Раздел, описывающий контейнер Polar-postgres.
+#    image: "postgres:14.4"
+#    container_name: "polar-postgres"
+#    ports:
+#      - 5432:5432
+#    environment:
+#      - POSTGRES_USER=user
+#      - POSTGRES_PASSWORD=password
+#      - POSTGRES_DB=polardb_catalog
+
+version: "3.8"
+
+networks:
+  pbs-network:
+    driver: bridge
+
+services:
+  pbs-catalog-service:
+    depends_on:
+      - pbs-postgres
+      - pbs-config-service
+    image: "goppot/pbs-catalog-service:1.0.0"
+    container_name: "pbs-catalog-service"
+    ports:
+      - 9001:9001
+    environment:
+      - BPL_JVM_THREAD_COUNT=50
+      - SPRING_CLOUD_CONFIG_URI=http://pbs-config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://pbs-postgres:5432/polardb_catalog
+      - SPRING_PROFILES_ACTIVE=testdata
+    networks:
+      - pbs-network
+
+  pbs-order-service:
+    depends_on:
+      - pbs-postgres
+      - pbs-config-service
+      - pbs-catalog-service
+      - pbs-rabbitmq
+    image: "goppot/pbs-order-service:1.0.0"
+    container_name: pbs-order-service
+    ports:
+      - 9002:9002
+    environment:
+      - POLAR_CATALOG_SERVICE_URI=http://pbs-catalog-service:9001
+      - SPRING_CLOUD_CONFIG_URI=http://pbs-config-service:8888
+      - SPRING_R2DBC_URL=r2dbc:postgresql://pbs-postgres:5432/polardb_order
+      - SPRING_FLYWAY_URL=jdbc:postgresql://pbs-postgres:5432/polardb_order
+      - SPRING_RABBITMQ_HOST=pbs-rabbitmq
+    networks:
+      - pbs-network
+
+  pbs-config-service:
+    image: "goppot/pbs-config-service:1.0.0"
+    container_name: "pbs-config-service"
+    ports:
+      - 8888:8888
+    networks:
+      - pbs-network
+
+  pbs-postgres:
+    image: "postgres:15.0"
+    container_name: "pbs-postgres"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      #Запустит скрипты из пакета
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pbs-network
+
+  pbs-rabbitmq:
+    image: rabbitmq:3.10-management
+    container_name: pbs-rabbitmq
+    ports:
+      #Порт, на котором RabbitMQ прослушивает запросы AMQP.
+      - 5672:5672
+      #Порт, который предоставляет доступ к файлу конфигурации
+      - 15672:15672
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    networks:
+      - pbs-network
+
+# docker-compose -f deployment/docker/docker-compose.yaml up -d
+# добавить health check
