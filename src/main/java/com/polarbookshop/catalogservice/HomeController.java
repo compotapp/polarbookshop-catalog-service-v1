@@ -8,7 +8,7 @@ public class HomeController {
 
     @GetMapping("/")//Обрабатывает запросы GET к корневой конечной точке.
     public String getGreeting() {
-        return "Welcome to the book catalog!";
+        return "Welcome to the book catalog!!!";
     }
 }
 
