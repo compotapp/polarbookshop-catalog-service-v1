@@ -1,0 +1,69 @@
+#version: "3.8"                          Docker Compose Syntax версия
+#services:                               Раздел, содержащий все контейнеры для запуска.
+#  catalog-service:                      Раздел, описывающий контейнер службы каталога
+#    depends_on:                         Служба каталогов должна запускаться после базы данных PostgreSQL
+#      - polar-postgres
+#    image: "catalog-service"            Образ, используемый для запуска контейнера
+#    container_name: "catalog-service"   Имя контейнера
+#    ports:                              Раздел со списком сопоставлений портов
+#      - 9001:9001                       порт приложения
+#      - 8001:8001                       порт отладки
+#    environment:                        В разделе перечислены переменные среды
+#      - BPL_JVM_THREAD_COUNT=50         Переменная среды Paketo Buildpacks для настройки количества потоков для расчета памяти
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://polar-postgres:5432/polardb_catalog
+#      - SPRING_PROFILES_ACTIVE=testdata Включает пружинный профиль «TestData»
+#  polar-postgres:                       Раздел, описывающий контейнер Polar-postgres.
+#    image: "postgres:14.4"
+#    container_name: "polar-postgres"
+#    ports:
+#      - 5432:5432
+#    environment:
+#      - POSTGRES_USER=user
+#      - POSTGRES_PASSWORD=password
+#      - POSTGRES_DB=polardb_catalog
+
+version: "3.8"
+
+networks:
+  pbs-network:
+    driver: bridge
+
+services:
+  pbs-catalog-service:
+    depends_on:
+      - pbs-postgres
+      - pbs-config-service
+    image: "pbs-catalog-service:1.0.0"
+    container_name: "pbs-catalog-service"
+    ports:
+      - 9001:9001
+    environment:
+      - BPL_JVM_THREAD_COUNT=50
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://pbs-postgres:5432/polardb_catalog
+      - SPRING_CLOUD_CONFIG_URI=http://pbs-config-service:8888
+      - SPRING_PROFILES_ACTIVE=testdata
+    networks:
+      - pbs-network
+
+  pbs-config-service:
+    image: "pbs-config-service:1.0.0"
+    container_name: "pbs-config-service"
+    ports:
+      - 8888:8888
+    networks:
+      - pbs-network
+
+  pbs-postgres:
+    image: "postgres"
+    container_name: "pbs-postgres"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=polardb_catalog
+    networks:
+      - pbs-network
+
+# docker-compose -f deployment/docker/docker-compose.yaml up -d
+# добавить health check

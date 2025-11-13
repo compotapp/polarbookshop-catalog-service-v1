@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-catalog-service
+  labels:
+    app: pbs-catalog-service
+spec:
+  selector:
+    matchLabels:
+      app: pbs-catalog-service
+  template:
+    metadata:
+      labels:
+        app: pbs-catalog-service
+    spec:
+      containers:
+        - name: pbs-catalog-service
+          image: goppot/pbs-catalog-service:2.0.0
+          #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
+          imagePullPolicy: IfNotPresent
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 5" ]
+          ports:
+            - containerPort: 9001
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://pbs-postgres/polardb_catalog
+#            - name: SPRING_CLOUD_CONFIG_URI
+#              value: http://pbs-config-service:8888
+            - name: SPRING_PROFILES_ACTIVE
+              value: testdata
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-catalog-service
+  labels:
+    app: pbs-catalog-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pbs-catalog-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9001
+
+#kubectl apply -f k8s/manifest/catalog-service.yaml

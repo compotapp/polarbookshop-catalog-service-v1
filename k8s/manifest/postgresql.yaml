@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-postgres
+  labels:
+    db: pbs-postgres
+spec:
+  selector:
+    matchLabels:
+      db: pbs-postgres
+  template:
+    metadata:
+      labels:
+        db: pbs-postgres
+    spec:
+      containers:
+        - name: pbs-postgres
+          image: postgres
+          env:
+            - name: POSTGRES_USER
+              value: user
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_DB
+              value: polardb_catalog
+          resources:
+            requests:
+              cpu: 100m
+              memory: 60Mi
+            limits:
+              cpu: 200m
+              memory: 120Mi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-postgres
+  labels:
+    db: pbs-postgres
+spec:
+  type: ClusterIP
+  selector:
+    db: pbs-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+#kubectl apply -f k8s/manifest/postgresql.yaml
+#kubectl apply -f k8s/manifest/services
+
+#kubectl delete -f k8s/manifest/postgresql.yaml

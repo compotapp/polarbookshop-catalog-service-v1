@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-config-service
+  labels:
+    app: pbs-config-service
+spec:
+  selector:
+    mathLabels:
+      app: pbs-config-service
+  template:
+    metadata:
+      labels:
+        app: pbs-config-service
+    spec:
+      containers:
+        - name: pbs-config-service
+          image: pbs-config-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8888
