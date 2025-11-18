@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
         - name: pbs-edge-service
-          image: goppot/pbs-edge-service:1.0.0
+          image: goppot/pbs-edge-service:1.0.2
           #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
           lifecycle:
             preStop:
@@ -55,3 +55,4 @@ spec:
       targetPort: 9000
 
 #kubectl apply -f k8s/manifest/edge-service.yaml
+#kubectl rollout restart deployment pbs-edge-service

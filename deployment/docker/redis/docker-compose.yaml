@@ -1,9 +1,0 @@
-version: "3.8"
-services:
-  pbs-redis:
-    image: "redis:7.2-alpine"
-    container_name: "pbs-redis"
-    ports:
-      - 6379:6379
-
-# docker-compose -f deployment/docker/redis/docker-compose.yaml up -d

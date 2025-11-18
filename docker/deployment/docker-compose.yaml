@@ -29,6 +29,14 @@ networks:
     driver: bridge
 
 services:
+  pbs-config-service:
+    image: "goppot/pbs-config-service:1.0.0"
+    container_name: "pbs-config-service"
+    ports:
+      - 8888:8888
+    networks:
+      - pbs-network
+        
   pbs-catalog-service:
     depends_on:
       - pbs-postgres
@@ -64,14 +72,6 @@ services:
     networks:
       - pbs-network
 
-  pbs-config-service:
-    image: "goppot/pbs-config-service:1.0.0"
-    container_name: "pbs-config-service"
-    ports:
-      - 8888:8888
-    networks:
-      - pbs-network
-
   pbs-postgres:
     image: "postgres:15.0"
     container_name: "pbs-postgres"
@@ -83,6 +83,14 @@ services:
     volumes:
       #Запустит скрипты из пакета
       - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pbs-network
+        
+  pbs-redis:
+    image: "redis:7.2-alpine"
+    container_name: "pbs-redis"
+    ports:
+      - 6379:6379
     networks:
       - pbs-network
 
@@ -99,5 +107,37 @@ services:
     networks:
       - pbs-network
 
-# docker-compose -f deployment/docker/docker-compose.yaml up -d
+  pbs-keycloak:
+    image: quay.io/keycloak/keycloak:19.0
+    container_name: "pbs-keycloak"
+    #Запускает Keycloak в режиме разработки (с использованием встроенной базы данных)
+    #Импортирует предоставленную конфигурацию во время запуска.
+    command: start-dev --import-realm
+    environment:
+      - KEYCLOAK_ADMIN=user
+      - KEYCLOAK_ADMIN_PASSWORD=password
+    ports:
+      - 8080:8080
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    networks:
+      - pbs-network
+  # docker-compose -f docker/deployment/docker-compose.yaml up -d pbs-keycloak
+
+  pbs-ui:
+    image: "ghcr.io/polarbookshop/polar-ui:v1"
+    container_name: "pbs-ui"
+    ports:
+      #NGINX будет обслуживать SPA через порт 9004.
+      - 9004:9004
+    environment:
+      #Настраивает порт сервера NGINX.
+      - PORT=9004
+    networks:
+      - pbs-network
+  # docker-compose -f docker/deployment/docker-compose.yaml up -d pbs-ui
+
+
+# docker-compose -f docker/deployment/docker-compose.yaml up -d
+
 # добавить health check

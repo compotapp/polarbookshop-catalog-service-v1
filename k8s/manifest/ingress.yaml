@@ -19,5 +19,12 @@ spec:
                 port:
                   #Номер порта Сервиса, на который должен перенаправляться трафик.
                   number: 9000
+          - path: /rabbitmq
+            pathType: Prefix
+            backend:
+              service:
+                name: pbs-rabbitmq
+                port:
+                  number: 15672
 
 #kubectl apply -f k8s/manifest/ingress.yaml

@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
         - name: pbs-order-service
-          image: goppot/pbs-order-service:1.0.0
+          image: goppot/pbs-order-service:1.0.1
           #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
           lifecycle:
             preStop:
@@ -38,7 +38,7 @@ spec:
             - name: POLAR_CATALOG_SERVICE_URI
               value: http://pbs-catalog-service:9001
             - name: SPRING_RABBITMQ_HOST
-              value: pbs-rabbitmq-service
+              value: pbs-rabbitmq
 
 ---
 
@@ -58,3 +58,4 @@ spec:
       targetPort: 9002
 
 #kubectl apply -f k8s/manifest/order-service.yaml
+#kubectl rollout restart deployment pbs-order-service
