@@ -5,7 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -39,6 +41,12 @@ public class Book {
 
     private String publisher;
 
+    @CreatedBy
+    String createdBy;
+
+    @LastModifiedBy
+    String lastModifiedBy;
+
     @CreatedDate
     private Instant createdDate;
 
@@ -48,7 +56,8 @@ public class Book {
     @Version
     private int version;
 
-    public Book() {}
+    public Book() {
+    }
 
     public Book(Long id, String isbn, String title, String author, Double price, String publisher, Instant createdDate, Instant lastModifiedDate, int version) {
         this.id = id;
@@ -112,6 +121,22 @@ public class Book {
 
     public void setPublisher(String publisher) {
         this.publisher = publisher;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
     }
 
     public Instant getCreatedDate() {
