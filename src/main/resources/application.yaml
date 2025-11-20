@@ -52,6 +52,13 @@ spring:
         max-interval: 2000
         #Множитель для вычисления следующего интервала
         multiplier: 1.1
+  security:
+    oauth2:
+      resourceserver:
+        #OAuth2 не требует соблюдения формата данных для токенов доступа, поэтому мы должны четко заявить о своем выборе. В данном случае мы хотим использовать JWT
+        jwt:
+          #URL-адрес Keycloak, предоставляющий информацию обо всех соответствующих конечных точках OAuth2 для конкретной области.
+          issuer-uri: http://localhost:8080/realms/PBS
 
 management:
   endpoints:
@@ -63,3 +70,8 @@ management:
 
 polar:
   greeting: Welcome to the local block catalog!
+
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.web: DEBUG
