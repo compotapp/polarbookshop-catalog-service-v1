@@ -2,18 +2,28 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - catalog-deployment.yaml
-#  - catalog-service.yaml
+  - manifest/ingress.yaml
+  - manifest/secret-db.yaml
+  - manifest/secret-tls.yaml
+  - manifest/storage-class.yaml
+  - manifest/postgresql.yaml
+  - manifest/catalog-service.yaml
 #Раздел, содержащий информацию для создания ConfigMaps.
 configMapGenerator:
-  - name: pbs-catalog-config
+  - name: pbs-postgres-init-config
     #Использует файл свойств в качестве источника для ConfigMap.
     files:
-      - application.yaml
+      - config/postgresql.sql
     options:
       #Определяет метки, которые нужно назначить сгенерированному ConfigMap.
       labels:
-        app: pbs-catalog-service
+        db: pbs-postgres-config
 #      disableNameSuffixHash: true
+  - name: pbs-catalog-service-config
+    files:
+      - application.yaml=config/catalog-service.yaml
+    options:
+      labels:
+        app: pbs-catalog-service-config
 
-#  kubectl apply -k k8s/kustomization/
+#  kubectl apply -k k8s/starting/local/

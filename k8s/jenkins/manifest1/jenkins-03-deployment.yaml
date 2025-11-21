@@ -1,0 +1,71 @@
+# Определяет Deployment для запуска Jenkins в Kubernetes
+# Deployment управляет созданием и обновлением Pod'ов с Jenkins
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins           # Имя Deployment
+  namespace: devops-tools # Пространство имен для развертывания
+spec:
+  replicas: 1             # Запускается только одна реплика Jenkins (не HA)
+  selector:
+    matchLabels:
+      app: jenkins-server # Селектор для поиска Pod'ов этого Deployment
+  strategy:
+    type: Recreate        # Стратегия обновления: сначала удалить старый Pod, потом создать новый
+  template:
+    metadata:
+      labels:
+        app: jenkins-server # Метки для Pod'ов
+    spec:
+      securityContext:
+        # Контекст безопасности для всего Pod'а
+        # Note: fsGroup may be customized for a bit of better
+        # filesystem security on the shared host
+        fsGroup: 1000      # Группа файловой системы для всех контейнеров
+        runAsUser: 1000    # UID пользователя, от которого запускаются контейнеры
+        ### runAsGroup: 1000 # Закомментировано - группа определяется fsGroup
+      serviceAccountName: jenkins-admin # ServiceAccount из первого манифеста
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts-jdk17  # Официальный LTS образ Jenkins
+          # OPTIONAL: check for new floating-tag LTS releases whenever the pod is restarted:
+          imagePullPolicy: Always     # Всегда проверять обновления образа при перезапуске
+          resources:
+            limits:
+              memory: "2Gi"   # Максимальное использование памяти
+              cpu: "1000m"    # Максимальное использование CPU (1 ядро)
+            requests:
+              memory: "500Mi" # Минимально гарантированная память
+              cpu: "500m"     # Минимально гарантированный CPU (0.5 ядра)
+          ports:
+            - name: httpport
+              containerPort: 8080   # Основной веб-интерфейс Jenkins
+            - name: jnlpport
+              containerPort: 50000  # Порт для агентов JNLP (Java Network Launch Protocol)
+          livenessProbe:
+            # Проверка живучести: если проверка падает, контейнер перезапускается
+            httpGet:
+              path: "/login"  # Проверка доступности страницы логина
+              port: 8080
+            initialDelaySeconds: 90  # Ждать 90 секунд перед первой проверкой (Jenkins долго стартует)
+            periodSeconds: 10        # Проверять каждые 10 секунд
+            timeoutSeconds: 5        # Таймаут проверки 5 секунд
+            failureThreshold: 5      # 5 неудачных проверок подряд -> контейнер считается умершим
+          readinessProbe:
+            # Проверка готовности: если проверка падает, трафик не направляется в контейнер
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 60  # Ждать 60 секунд перед первой проверкой готовности
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3      # 3 неудачных проверки -> контейнер не готов принимать трафик
+          volumeMounts:
+            - name: jenkins-data
+              mountPath: /var/jenkins_home  # Основная директория Jenkins с конфигурацией и данными
+      volumes:
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins-pv-claim  # Использует PVC из предыдущего манифеста для хранения данных
+
+# kubectl apply -f k8s/jenkins/manifest1/jenkins-03-deployment.yaml

@@ -1,0 +1,30 @@
+# Создает PersistentVolume (PV) для хранения данных Jenkins
+# PV - это физический том хранения в кластере Kubernetes
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-pv       # Имя PersistentVolume
+  namespace: jenkins     # ПРИМЕЧАНИЕ: namespace в PV обычно не используется (PV - кластерный ресурс)
+  # Это может быть ошибкой в манифесте
+spec:
+  storageClassName: jenkins-pv  # Имя класса хранилища, к которому принадлежит этот том
+  accessModes:
+    - ReadWriteOnce  # Том может быть смонтирован на чтение и запись только одним узлом одновременно
+  capacity:
+    storage: 10Gi    # Размер тома - 10 гигабайт
+  persistentVolumeReclaimPolicy: Retain  # Важная политика: данные сохраняются при удалении PVC
+  hostPath:
+    path: /data/jenkins-volume/  # Локальный путь на узле для хранения данных
+    # Этот путь должен существовать на узле перед созданием PV
+---
+# Определяет StorageClass для локального хранилища
+# StorageClass описывает "класс" хранилища, который можно запрашивать через PVC
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: jenkins-pv  # Имя класса хранилища
+provisioner: kubernetes.io/no-provisioner  # Указывает, что том НЕ будет создаваться автоматически
+# Том должен быть создан вручную (как PV выше)
+volumeBindingMode: WaitForFirstConsumer  # Связывание PV с PVC откладывается до запуска Pod'а
+
+#  kubectl apply -f k8s/jenkins/manifest1/jenkins-01-volume.yaml

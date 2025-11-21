@@ -12,6 +12,11 @@ kubectl config use-context pbs
 kubectl get nodes
 
 kubectl get pod
+kubectl get pods
+
+kubectl exec -it <pod-name> -- /bin/bash
+kubectl exec -it <pod-name> -- /bin/sh
+kubectl exec -it <pod-name> -c <container-name> -- /bin/bash
 
 #Логи приложения
 kubectl logs deployment/pbs-catalog-service
@@ -24,7 +29,11 @@ kubectl get ingress
 kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80
 http://127.0.0.1:8080/books
 
-kubectl port-forward service/polar-postgres 5432:5432
+kubectl port-forward service/pbs-postgres 5432:5432
+
+kubectl port-forward service/pbs-catalog-service 9001:9001
+
+kubectl port-forward -n devops-tools service/jenkins-service 8080:8080
 
 kubectl get deploy -l app=catalog-service
 

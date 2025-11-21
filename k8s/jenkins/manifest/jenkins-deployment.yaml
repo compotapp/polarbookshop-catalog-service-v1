@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts-jdk11
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          env:
+            - name: JAVA_OPTS
+              value: "-Djenkins.install.runSetupWizard=false"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: kube-config
+              mountPath: /home/jenkins/.kube
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: kube-config
+          configMap:
+            name: kube-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30000
+    - name: agent
+      port: 50000
+      targetPort: 50000
+      nodePort: 30001
+  selector:
+    app: jenkins
+
+#  kubectl apply -f k8s/jenkins/manifest/jenkins-namespace.yaml
+#  kubectl apply -f k8s/jenkins/manifest/jenkins-rbac.yaml
+#  kubectl apply -f k8s/jenkins/manifest/jenkins-pvc.yaml
+#  minikube kubectl -- create configmap kube-config --from-file=$HOME/.kube/config -n jenkins
+#  kubectl apply -f k8s/jenkins/manifest/jenkins-deployment.yaml
+#  kubectl delete -f k8s/jenkins/manifest/jenkins-deployment.yaml
+#  kubectl apply -f k8s/jenkins/manifest/jenkins-with-docker.yaml
+#  kubectl delete -f k8s/jenkins/manifest/jenkins-with-docker.yaml
+#  kubectl apply -f k8s/jenkins/manifest/maven-cache-pvc.yaml

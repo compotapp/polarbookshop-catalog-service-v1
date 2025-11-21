@@ -1,0 +1,55 @@
+# Определяет StorageClass для локального хранения данных
+# StorageClass описывает "класс" или тип хранилища, который можно запрашивать
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: local-storage  # Имя класса хранилища
+provisioner: kubernetes.io/no-provisioner  # Указывает, что том не будет создаваться автоматически
+volumeBindingMode: WaitForFirstConsumer  # Связывание тома будет происходить только при использовании Pod'ом
+---
+# Создает PersistentVolume (PV) - физический том хранения в кластере
+# PV представляет собой кусок реального хранилища в кластере
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-pv-volume  # Имя тома
+  labels:
+    type: local  # Метка типа тома
+spec:
+  storageClassName: local-storage  # Ссылка на созданный выше StorageClass
+  claimRef:
+    name: jenkins-pv-claim  # Предварительная привязка к конкретному PVC
+    namespace: devops-tools  # Пространство имен PVC
+  capacity:
+    storage: 10Gi  # Общий размер тома (10 ГБ)
+  accessModes:
+    - ReadWriteOnce  # Том может быть смонтирован на чтение и запись только одним узлом одновременно
+  local:
+    path: /mnt  # Локальный путь на узле, где будут храниться данные
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube  # Том привязан к конкретному узлу worker-node01
+---
+# Создает PersistentVolumeClaim (PVC) - запрос на выделение тома
+# PVC - это запрос пользователя на хранилище с определенными параметрами
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pv-claim  # Имя запроса на том
+  namespace: devops-tools  # Пространство имен Jenkins
+spec:
+  storageClassName: local-storage  # Запрашиваем том из класса local-storage
+  accessModes:
+    - ReadWriteOnce  # Требуемый режим доступа
+  resources:
+    requests:
+      storage: 3Gi  # Запрашиваемый объем хранилища (3 ГБ из доступных 10 ГБ)
+
+# kubectl apply -f k8s/jenkins/manifest1/jenkins-02-volume.yaml
+# kubectl create -f k8s/jenkins/manifest1/jenkins-02-volume.yaml
+# kubectl delete -f k8s/jenkins/manifest1/jenkins-02-volume.yaml

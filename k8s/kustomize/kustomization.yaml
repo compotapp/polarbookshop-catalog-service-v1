@@ -1,0 +1,18 @@
+#Поды будут перезапущены последовательно
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - catalog-deployment.yaml
+#Раздел, содержащий информацию для создания ConfigMaps.
+configMapGenerator:
+  - name: pbs-catalog-config
+    #Использует файл свойств в качестве источника для ConfigMap.
+    files:
+      - application.yaml
+    options:
+      #Определяет метки, которые нужно назначить сгенерированному ConfigMap.
+      labels:
+        app: pbs-catalog-service
+      disableNameSuffixHash: true
+
+#  kubectl apply -k k8s/kustomize/

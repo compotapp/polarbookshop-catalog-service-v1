@@ -1,41 +1,129 @@
-name: Commit Stage
-on: push  # Запускается при любом push
-env:      # Глобальные переменные
+name: Commit Stage  # Название workflow (этапа коммита)
+on: push  # Триггер: запускается при любом push в репозиторий
+
+env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: pbs/catalog-service
-  VERSION: latest
+  IMAGE_NAME: compotapp/catalog-service
+  VERSION: ${{ github.sha }}
+
 jobs:
   build:
-    name: Build and Test
-    runs-on: ubuntu-22.04
+    name: Build and Test  # Название job: Сборка и тестирование
+    runs-on: ubuntu-22.04  # Запуск на виртуальной машине с Ubuntu 22.04
     permissions:
-      contents: read
-      security-events: write
+      contents: read  # Разрешение на чтение содержимого репозитория
+      security-events: write  # Разрешение на запись событий безопасности
+
     steps:
+      # Шаг 1: Получение исходного кода из репозитория
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Использует action для checkout кода
 
+      # Шаг 2: Настройка Java окружения
       - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: maven
+        uses: actions/setup-java@v3  # Использует action для установки Java
+        with:  # Параметры настройки Java
+          distribution: temurin  # Дистрибутив Java: Eclipse Temurin
+          java-version: 17  # Версия Java: 17
+          cache: maven  # Кэширование Maven зависимостей для ускорения сборок
 
+      # Шаг 3: Сканирование кода на уязвимости безопасности
       - name: Code vulnerability scanning
-        uses: anchore/scan-action@v3
-        id: scan
-        with:
-          path: "${{ github.workspace }}"
-          fail-build: false
-          severity-cutoff: high
-          acs-report-enable: true
+        uses: anchore/scan-action@v3  # Использует Anchore для сканирования
+        id: scan  # Идентификатор шага для использования в других шагах
+        with:  # Параметры сканирования
+          path: "${{ github.workspace }}"  # Путь для сканирования - вся рабочая директория
+          fail-build: false  # Не прерывать сборку при найденных уязвимостях
+          severity-cutoff: high  # Отслеживать только уязвимости уровня HIGH и выше
+          acs-report-enable: true  # Включить расширенный отчет ACS
 
+      # Шаг 4: Загрузка отчета об уязвимостях
       - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v2
-        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4  # Action для загрузки SARIF отчетов
+        if: success() || failure()  # Запускать всегда - при успехе или неудаче предыдущих шагов
         with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
+          sarif_file: ${{ steps.scan.outputs.sarif }}  # Файл отчета из шага сканирования
 
+      # Шаг 5: Сборка проекта и запуск тестов
       - name: Build, unit tests and integration tests
         run: mvn clean compile test-compile surefire:test failsafe:integration-test verify
+        # Maven команды:
+        # clean - очистка target директории
+        # compile - компиляция основного кода
+        # test-compile - компиляция тестового кода
+        # surefire:test - запуск unit-тестов
+        # failsafe:integration-test - запуск интеграционных тестов
+        # verify - проверка результатов сборки и тестов
+
+      # Шаг 6: Валидация Kubernetes манифестов
+      - name: Validate Kubernetes manifests
+        # Использует универсальный action для работы с Kubernetes инструментами
+        uses: stefanprodan/kube-tools@v1
+        with:
+          # Устанавливает конкретные версии инструментов:
+          kubectl: 1.24.3    # Версия kubectl - CLI для работы с Kubernetes
+          kubeval: 0.16.1    # Версия kubeval - валидатора Kubernetes манифестов
+
+          # Команда для выполнения:
+          # 1. kustomize build k8s/kustomize - собирает Kubernetes манифесты из директории k8s/kustomize используя Kustomize
+          # 2. | - передает вывод команды слева на вход команде справа (пайп)
+          # 3. kubeval --strict - - валидирует манифесты в строгом режиме (--strict)
+          #    и принимает входные данные из стандартного ввода (-)
+          command: |
+            kustomize build k8s/kustomize | kubeval --strict -
+
+  package:
+    name: Package and Publish                    # Job: Упаковка и публикация
+    #if: ${{ github.ref == 'refs/heads/main' }}  # Только для main ветки
+    needs: [ build ]                            # Зависит от успешной сборки(шаг выше)
+    runs-on: ubuntu-22.04                       # Запуск на Ubuntu 22.04
+    permissions:
+      contents: read                            # Чтение репозитория
+      packages: write                           # Запись в Container Registry
+      security-events: write                    # Запись security событий
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4               # Получение кода из репозитория
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4             # Установка Java
+        with:
+          distribution: temurin                 # Дистрибутив Eclipse Temurin
+          java-version: 17                      # Версия Java 17
+          cache: maven                          # Кэширование Maven зависимостей
+
+      - name: Build container image
+        run: |                                  # Сборка Docker образа
+          chmod +x mvnw                         # Даем права на выполнение mvnw
+          ./mvnw spring-boot:build-image -Dimage=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+
+      - name: Tag image correctly               # Создаем тег с SHA коммита для публикации
+        run: |
+          docker tag ghcr.io/catalog-service:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+
+      - name: OCI image vulnerability scanning
+        uses: anchore/scan-action@v3            # Сканирование образа на уязвимости
+        id: scan                                # ID для доступа к результатам
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          fail-build: false                     # Не прерывать сборку при уязвимостях
+          severity-cutoff: high                 # Только уязвимости HIGH и выше
+
+      - name: Upload vulnerability report
+        uses: github/codeql-action/upload-sarif@v4  # Загрузка отчета безопасности
+        if: success() || failure()              # Всегда - при успехе или неудаче
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}  # Файл отчета из сканирования
+        continue-on-error: true # Позволяет продолжить сборку, если файл создан с ошибками
+
+      - name: Log into container registry
+        uses: docker/login-action@v3            # Авторизация в container registry
+        with:
+          registry: ${{ env.REGISTRY }}         # GitHub Container Registry
+          username: ${{ github.actor }}         # Имя пользователя GitHub
+          password: ${{ secrets.GITHUB_TOKEN }} # Токен аутентификации
+
+      - name: Publish container image
+        run: |                                  # Публикация Docker образа
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}

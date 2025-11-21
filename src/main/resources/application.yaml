@@ -100,6 +100,8 @@ polar:
   greeting: Welcome to the local block catalog!
 
 logging:
+  file:
+    name: logs/catalog-service.log
   pattern:
     #Включает имя приложения, идентификатор трассировки и идентификатор диапазона рядом с уровнем журнала (%5p).
     level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

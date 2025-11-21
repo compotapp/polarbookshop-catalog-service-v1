@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@Profile("testdata")
+@Profile({"testdata", "starting"})
 public class BookDataLoader {
 
     private final BookRepository bookRepository;

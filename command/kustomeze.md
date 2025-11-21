@@ -1,0 +1,1 @@
+kustomize edit set image pbs-catalog-service=ghcr.io/compotapp/pbs-catalog-service:latest

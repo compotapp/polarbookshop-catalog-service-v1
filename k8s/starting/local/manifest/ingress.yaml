@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catalog-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Перенаправлять HTTP на HTTPS
+spec:
+  tls:
+    - hosts:
+        - catalog-service.local
+      secretName: pbs-app-tls  # Наш волшебный паспорт
+  rules:
+    - host: catalog-service.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pbs-catalog-service
+                port:
+                  number: 9001

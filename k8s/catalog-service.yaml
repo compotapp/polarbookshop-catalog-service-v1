@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pbs-catalog-service-log
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+#  storageClassName: fast-storage  # Вот тут магия - StorageClass автоматически создаст PV!
+  storageClassName: fast-storage
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbs-catalog-service
+  labels:
+    app: pbs-catalog-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pbs-catalog-service
+  template:
+    metadata:
+      labels:
+        app: pbs-catalog-service
+      annotations:
+        #Сигнализирует о том, что Prometheus должен очистить контейнеры в этом модуле.
+        prometheus.io/scrape: "true"
+        #Идентифицирует конечную точку HTTP, которая предоставляет метрики Prometheus.
+        prometheus.io/path: /actuator/prometheus
+        #Указывает номер порта, на котором доступна конечная точка метрик.
+        prometheus.io/port: "9001"
+    spec:
+      containers:
+        - name: pbs-catalog-service
+          image: compotapp/pbs-catalog-service:latest
+          #Указывает Kubernetes извлекать образ из реестра контейнера, только если он еще не присутствует локально
+          imagePullPolicy: IfNotPresent
+          #imagePullPolicy: Always
+          #Эта команда заставляет контейнер "поспать" 5 секунд перед завершением.
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 5" ]
+          ports:
+            - containerPort: 9001
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pbs-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pbs-db-secret
+                  key: password
+          #Монтирует ConfigMap в контейнер как том.
+          volumeMounts:
+            - name: pbs-catalog-srvise-config-volume
+              #Spring Boot автоматически найдет и включит файлы свойств из этой папки.
+              mountPath: /app/config
+            - name: pbs-catalog-service-log-volume
+              mountPath: /app/logs
+#            - name: db-secrets-volume
+#              mountPath: /app/secrets
+#              readOnly: true
+          #Конфигурация для проверки жизнеспособности
+          livenessProbe:
+            #Использует HTTP-запрос GET для получения состояния работоспособности.
+            httpGet:
+              #Конечная точка для вызова состояния работоспособности.
+              path: /actuator/health/liveness
+              #Порт, который будет использоваться для получения состояния работоспособности
+              port: 9001
+            #Ожидание перед первой проверкой
+            initialDelaySeconds: 60
+            #Интервал между проверками
+            periodSeconds: 30
+            #Успешные проверки для перехода в Ready
+            successThreshold: 1
+            #Неудачи для перехода в Not Ready (по умолчанию 3)
+            failureThreshold: 3
+            #Таймаут проверки
+            timeoutSeconds: 5
+          #Конфигурация датчика готовности
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9001
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 5
+      #Определяет тома для модуля
+      volumes:
+        - name: pbs-catalog-srvise-config-volume
+          configMap:
+            #ConfigMap, из которого создается том.
+            name: pbs-catalog-service-config
+        - name: pbs-catalog-service-log-volume
+          persistentVolumeClaim:
+            claimName: pbs-catalog-service-log
+#        - name: db-secrets-volume
+#          secret:
+#            secretName: pbs-db-secret
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-catalog-service
+  labels:
+    app: pbs-catalog-service
+spec:
+  type: NodePort  # Изменено с ClusterIP для доступа извне
+  selector:
+    app: pbs-catalog-service
+  ports:
+    - protocol: TCP
+      port: 9001
+      targetPort: 9001
+      nodePort: 30002  # Добавлен nodePort для доступа
+
+#kubectl apply -f k8s/manifest/catalog-service.yaml

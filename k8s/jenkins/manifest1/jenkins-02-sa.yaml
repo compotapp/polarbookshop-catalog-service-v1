@@ -1,0 +1,87 @@
+# Создает ServiceAccount для Jenkins с ограниченными правами
+# (в отличие от первого манифеста с полными правами)
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins           # Имя ServiceAccount
+  namespace: devops-tools      # Пространство имен для ServiceAccount
+---
+# Определяет ClusterRole с конкретными правами для Jenkins
+# Более безопасный подход чем "*" (все права)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"  # Автоматическое обновление роли при изменении
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults  # Метка для системных ролей
+  name: jenkins  # Имя ClusterRole
+rules:
+  # Первое правило: права на основные ресурсы Kubernetes для CI/CD операций
+  - apiGroups:
+      - '*'  # Все API группы (apps, batch, extensions и т.д.)
+    resources:
+      # Список конкретных ресурсов (более безопасно чем "*")
+      - statefulsets           # StatefulSets
+      - services               # Services
+      - replicationcontrollers # ReplicationControllers (устаревшие)
+      - replicasets            # ReplicaSets
+      - podtemplates           # PodTemplates
+      - podsecuritypolicies    # PodSecurityPolicies (устаревшие в 1.25+)
+      - pods                   # Pods
+      - pods/log               # Логи Pod'ов
+      - pods/exec              # Exec в Pod'ы
+      - podpreset              # PodPresets (устаревшие)
+      - poddisruptionbudget    # PodDisruptionBudgets
+      - persistentvolumes      # PersistentVolumes
+      - persistentvolumeclaims # PersistentVolumeClaims
+      - jobs                   # Jobs
+      - endpoints              # Endpoints
+      - deployments            # Deployments
+      - deployments/scale      # Масштабирование Deployments
+      - daemonsets             # DaemonSets
+      - cronjobs               # CronJobs
+      - configmaps             # ConfigMaps
+      - namespaces             # Namespaces
+      - events                 # Events
+      - secrets                # Secrets (ВАЖНО: доступ к секретам!)
+    verbs:
+      - create  # Создание
+      - get     # Чтение конкретного
+      - watch   # Наблюдение за изменениями
+      - delete  # Удаление
+      - list    # Список всех
+      - patch   # Частичное обновление
+      - update  # Полное обновление
+
+  # Второе правило: ограниченные права на ноды (только чтение)
+  - apiGroups:
+      - ""  # Основная группа API (core)
+    resources:
+      - nodes  # Ноды кластера
+    verbs:
+      - get    # Чтение информации о нодах
+      - list   # Список нод
+      - watch  # Наблюдение за нодами
+      - update # Обновление нод (осторожно!)
+---
+# Связывает ClusterRole со всеми ServiceAccount'ами в namespace jenkins
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"  # Автоматическое обновление
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults  # Системная метка
+  name: jenkins  # Имя ClusterRoleBinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole  # Ссылка на ClusterRole выше
+  name: jenkins      # Имя ClusterRole
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:serviceaccounts:jenkins  # ВСЕ ServiceAccount'ы в namespace jenkins
+
+# kubectl apply -f k8s/jenkins/manifest1/jenkins-02-sa.yaml

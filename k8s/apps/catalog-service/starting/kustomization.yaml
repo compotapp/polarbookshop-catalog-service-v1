@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - github.com/compotapp/polarbookshop-catalog-service-v1/k8s/kustomize?ref=PBS/git-action
+
+patchesStrategicMerge:
+  - patch-env.yml
+
+configMapGenerator:
+  - behavior: merge
+    files:
+      - application-staging.yml
+    name: pbs-catalog-config
+
+images:
+  - name: pbs-catalog-service
+    newName: ghcr.io/compotapp/pbs-catalog-service
+    newTag: latest
+
+replicas:
+  - name: pbs-catalog-service
+    count: 2
+
+#kubectl apply k8s/apps/catalog-service/starting -k

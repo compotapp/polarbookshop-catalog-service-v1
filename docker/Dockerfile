@@ -1,7 +1,3 @@
-# Команда для сборки
-# docker build -f docker/Dockerfile -t goppot/k8s-middle:3.0.0 .
-# docker push goppot/k8s-middle:3.0.0
-
 # Используем официальный образ OpenJDK 17
 FROM eclipse-temurin:17-jdk-jammy as builder
 
@@ -60,7 +56,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 #└── app.jar              # JAR-файл, скопированный из /app/target/ этапа builder
 
 #docker build -f docker/Dockerfile -t pbs-catalog-service:1.0.0 .
-#docker build -f docker/Dockerfile -t goppot/pbs-catalog-service:1.0.0 .
+#docker build -f docker/Dockerfile -t compotapp/pbs-catalog-service:1.0.0 .
 #docker run -d --name catalog-service -p 9001:9001 pbs-catalog-service:1.0.0
 #docker run -d --name catalog-service --net catalog-network -p 9001:9001 -e SPRING_DATASOURCE_URL=jdbc:postgresql://polar-postgres:5432/polardb_catalog -e SPRING_PROFILES_ACTIVE=testdata -e SPRING_CLOUD_CONFIG_URI=http://config-service:8888 pbs-catalog-service:1.0.0
 #docker tag pbs-catalog-service-image:1.0.0 ghcr.io/compotapp/pbs-catalog-service:1.0.0
@@ -69,7 +65,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 #password token
 #docker push ghcr.io/compotapp/pbs-catalog-service:1.0.0
 
-#docker tag pbs-catalog-service:1.0.0 goppot/pbs-config-catalog:1.0.0
-#docker push goppot/pbs-catalog-service:1.0.0
+#docker tag pbs-catalog-service:1.0.0 compotapp/pbs-config-catalog:1.0.0
+#docker push compotapp/pbs-catalog-service:1.0.0
 
 #docker exec -it pbs-catalog-service /bin/bash

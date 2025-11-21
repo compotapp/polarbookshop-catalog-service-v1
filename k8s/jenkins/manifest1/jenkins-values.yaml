@@ -1,0 +1,647 @@
+# Значения по умолчанию для Jenkins.
+# Это файл в формате YAML.
+# Объявляйте пары имя/значение для передачи в ваши шаблоны.
+# name: value
+
+## Переопределения для сгенерированных имен ресурсов
+# См. templates/_helpers.tpl
+# -- Переопределить префикс имени ресурса
+# @default -- `Chart.Name`
+nameOverride:
+# -- Переопределить полные имена ресурсов
+# @default -- `jenkins-(release-name)` или `jenkins`, если release-name равен `jenkins`
+fullnameOverride:
+# -- Переопределить namespace развертывания
+# @default -- `Release.Namespace`
+namespaceOverride:
+
+# Для разрешения FQDN сервиса контроллера. Измените это значение в соответствии с вашей конфигурацией.
+# ref: https://github.com/kubernetes/dns/blob/master/docs/specification.md
+# -- Переопределить имя кластера для разрешения FQDN
+clusterZone: "cluster.local"
+
+# -- URL API-сервера Kubernetes
+kubernetesURL: "https://kubernetes.default"
+
+# -- Учетные данные Jenkins для доступа к API-серверу Kubernetes. Для кластера по умолчанию не требуется.
+credentialsId:
+
+# -- Включает отрисовку метки helm.sh/chart в аннотации
+renderHelmLabels: true
+
+# -- Настраивает дополнительные метки для всех объектов агентов
+extraLabels: {}
+
+controller:
+  # -- Используется для метки app.kubernetes.io/component
+  componentName: "jenkins-controller"
+  image:
+    # -- Реестр образа контроллера
+    registry: "docker.io"
+    # -- Репозиторий образа контроллера
+    repository: "jenkins/jenkins"
+
+    # -- Переопределение тега образа контроллера; например: tag: "2.440.1-jdk21"
+    tag:
+
+    # -- Метка тега образа контроллера
+    tagLabel: jdk21
+    # -- Политика загрузки образа контроллера
+    pullPolicy: "Always"
+  # -- Имя секрета для загрузки образа контроллера
+  imagePullSecretName:
+  # -- Спецификация жизненного цикла для контейнера контроллера
+  lifecycle: {}
+  #  postStart:
+  #    exec:
+  #      command:
+  #      - "uname"
+  #      - "-a"
+
+  # -- Отключить использование функции "запомнить меня"
+  disableRememberMe: false
+
+  # -- Установить количество исполнителей
+  numExecutors: 0
+
+  # -- Устанавливает режим исполнителя узла Jenkins. Возможные значения: "NORMAL" или "EXCLUSIVE"
+  executorMode: "NORMAL"
+
+  # -- Добавить метки Jenkins к контроллеру
+  customJenkinsLabels: []
+
+  hostNetworking: false
+
+  # При включении LDAP или другого источника идентификации, не являющегося Jenkins, встроенная учетная запись администратора больше не будет существовать.
+  # Если вы отключите источник идентификации не-Jenkins и будете использовать внутренний источник Jenkins,
+  # вам следует вернуть controller.admin.username к вашему предпочитаемому пользователю администратора:
+  admin:
+    # -- Имя пользователя администратора, создаваемое как секрет, если `controller.admin.createSecret` равно true
+    username: "admin"
+    # -- Пароль администратора, создаваемый как секрет, если `controller.admin.createSecret` равен true
+    # @default -- <случайный пароль>
+    password:
+
+    # -- Ключ в существующем секрете администратора, содержащий имя пользователя
+    userKey: jenkins-admin-user
+    # -- Ключ в существующем секрете администратора, содержащий пароль
+    passwordKey: jenkins-admin-password
+
+    # Конфигурация по умолчанию использует этот секрет для настройки пользователя администратора
+    # Если вам не нужен этот пользователь или вы используете другую область безопасности, вы можете отключить его
+    # -- Создать секрет для пользователя администратора
+    createSecret: true
+
+    # -- Имя существующего секрета, содержащего учетные данные администратора
+    existingSecret: ""
+  # -- Адрес электронной почты администратора экземпляра Jenkins
+  jenkinsAdminEmail:
+
+  # Это значение не следует менять, если вы не используете свой пользовательский образ Jenkins или производный от него.
+  # Если вы хотите использовать Cloudbees Jenkins Distribution docker, вы должны установить jenkinsHome: "/var/cloudbees-jenkins-distribution"
+  # -- Пользовательский путь к домашней директории Jenkins
+  jenkinsHome: "/var/jenkins_home"
+
+  # Это значение не следует менять, если вы не используете свой пользовательский образ Jenkins или производный от него.
+  # Если вы хотите использовать Cloudbees Jenkins Distribution docker, вы должны установить jenkinsRef: "/usr/share/cloudbees-jenkins-distribution/ref"
+  # -- Пользовательский путь к справочной директории Jenkins
+  jenkinsRef: "/usr/share/jenkins/ref"
+
+  # Путь к файлу war jenkins, который используется jenkins-plugin-cli.
+  jenkinsWar: "/usr/share/jenkins/jenkins.war"
+  # Переопределить аргументы по умолчанию, передаваемые в war
+  # overrideArgs:
+  #   - --httpPort=8080
+
+  # -- Выделение ресурсов (Requests и Limits)
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      cpu: "2000m"
+      memory: "4096Mi"
+
+  # Общее пространство имен процессов для взаимодействия sidecar-контейнеров с процессами в других контейнерах того же пода
+  shareProcessNamespace: false
+
+  # Ссылки на сервисы могут вызывать проблемы при работе в namespace с большим количеством сервисов
+  # что может привести к медленному запуску при копировании плагинов из ref в том
+  # Установите true, чтобы сохранить предыдущее поведение
+  # См. https://github.com/kubernetes/kubernetes/issues/121787
+  enableServiceLinks: false
+
+  # Переопределяет значения по умолчанию для init-контейнера
+  # -- Выделение ресурсов (Requests и Limits) для Init-контейнера
+  initContainerResources: {}
+  # initContainerResources:
+  #   requests:
+  #     cpu: "50m"
+  #     memory: "256Mi"
+  #   limits:
+  #     cpu: "2000m"
+  #     memory: "4096Mi"
+  # -- Источники переменных окружения для Init-контейнера
+  initContainerEnvFrom: []
+
+  # полезно, например, для http_proxy
+  # -- Переменные окружения для Init-контейнера
+  initContainerEnv: []
+  # initContainerEnv:
+  #   - name: http_proxy
+  #     value: "http://192.168.64.1:3128"
+
+  # -- Источники переменных окружения для контейнера Jenkins
+  containerEnvFrom: []
+
+  # -- Переменные окружения для контейнера Jenkins
+  containerEnv: []
+  #   - name: http_proxy
+  #     value: "http://192.168.64.1:3128"
+
+  # Установите минимальную/максимальную кучу здесь, если нужно: "-Xms512m -Xmx512m"
+  # -- Добавить к env переменной `JAVA_OPTS`
+  javaOpts:
+  # -- Добавить к env переменной `JENKINS_OPTS`
+  jenkinsOpts:
+
+  # Если вы используете определения ingress, предоставляемые этим chart через блок `controller.ingress`,
+  # то настроенное имя хоста будет именем хоста ingress, начинающимся с `https://`
+  # или `http://` в зависимости от конфигурации `tls`.
+  # Протокол может быть переопределен путем указания `controller.jenkinsUrlProtocol`.
+  # -- Установить протокол для URL Jenkins; `https`, если `controller.ingress.tls`, `http` в противном случае
+  jenkinsUrlProtocol:
+
+  # -- Установить URL Jenkins, если вы не используете определения ingress, предоставляемые chart
+  jenkinsUrl:
+
+  # Если вы установите этот префикс и используете контроллер ingress, то, возможно, захотите установить путь ingress ниже
+  # Например, "/jenkins"
+  # -- Корневой URI, по которому будет обслуживаться Jenkins
+  jenkinsUriPrefix:
+
+  # -- Включить контекст безопасности пода (должно быть `true`, если установлены podSecurityContextOverride, runAsUser или fsGroup)
+  usePodSecurityContext: true
+
+  # Обратите внимание, что `runAsUser`, `fsGroup` и `securityContextCapabilities`
+  # являются устаревшими и заменяются `podSecurityContextOverride`.
+  # Установите runAsUser в 1000, чтобы Jenkins запускался от пользователя не-root 'jenkins', который существует в образе docker 'jenkins/jenkins'.
+  # При настройке runAsUser на значение, отличное от 0, также установите fsGroup на то же значение:
+  # -- Устарело в пользу `controller.podSecurityContextOverride`. UID, от которого запускается jenkins.
+  runAsUser: 1000
+
+  # -- Устарело в пользу `controller.podSecurityContextOverride`. UID, который будет использоваться для постоянного тома.
+  fsGroup: 1000
+
+  # Если у вас есть PodSecurityPolicies, требующие удаления capabilities, как предлагается в CIS K8s benchmark, поместите их здесь
+  # securityContextCapabilities:
+  #  drop:
+  #    - NET_RAW
+  securityContextCapabilities: {}
+
+  # В случае монтирования файловой системы ext4 может быть желательно использовать `supplementalGroups` вместо `fsGroup` в
+  # блоке `securityContext`: https://github.com/kubernetes/kubernetes/issues/67014#issuecomment-589915496
+  # podSecurityContextOverride:
+  #   runAsUser: 1000
+  #   runAsNonRoot: true
+  #   supplementalGroups: [1000]
+  #   capabilities: {}
+  # -- Полностью переопределяет содержимое контекста безопасности пода, игнорируя значения, предоставленные для `runAsUser`, `fsGroup` и `securityContextCapabilities`
+  podSecurityContextOverride: ~
+
+  # -- Позволяет контролировать securityContext для контейнера jenkins
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+
+  # -- включить или отключить сервис k8s контроллера
+  serviceEnabled: true
+
+  # Для minikube установите значение NodePort, в остальных случаях используйте LoadBalancer
+  # Используйте ClusterIP, если ваша настройка включает контроллер ingress
+  # -- тип сервиса k8s
+  serviceType: ClusterIP
+
+  # -- IP кластера сервиса k8s. Используется только если serviceType равен ClusterIP
+  clusterIp:
+  # -- порт сервиса k8s
+  servicePort: 8080
+  # -- целевой порт k8s
+  targetPort: 8080
+  # -- порт узла k8s. Используется только если serviceType равен NodePort
+  nodePort:
+
+  # Используйте Local для сохранения исходного IP клиента и избежания второго прыжка для сервисов типа LoadBalancer и NodePort,
+  # но рискует потенциально несбалансированным распространением трафика.
+  serviceExternalTrafficPolicy:
+
+  # Если включено, контроллер доступен через свой сервис до того, как его поды сообщат о готовности. Делает возможным экран запуска и
+  # функцию авто-перезагрузки при перезапуске.
+  publishNotReadyAddresses:
+
+  # -- Аннотации сервиса контроллера Jenkins
+  serviceAnnotations: {}
+  # -- Пользовательские метки для StatefulSet контроллера Jenkins
+  statefulSetLabels: {}
+  #   foo: bar
+  #   bar: foo
+  # -- Метки для сервиса контроллера Jenkins
+  serviceLabels: {}
+  #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
+
+  # Поместить метки на под контроллера Jenkins
+  # -- Пользовательские метки пода (объект с парами `label-key: label-value`)
+  podLabels: {}
+
+  # Включить Kubernetes Startup, Liveness и Readiness Probes
+  # Если поддерживается Startup Probe, включите его тоже
+  # ~ 2 минуты, чтобы позволить Jenkins перезапуститься при обновлении плагинов. Установите ReadinessTimeout короче, чем LivenessTimeout.
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes
+  # -- Включить конфигурацию Kubernetes Probes, настроенную в `controller.probes`
+  healthProbes: true
+
+  probes:
+    startupProbe:
+      # -- Установить порог сбоев для startup probe
+      failureThreshold: 12
+      httpGet:
+        # -- Установить HTTP-путь пода для startup probe
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        # -- Установить HTTP-порт пода для использования в startup probe
+        port: http
+      # -- Установить временной интервал между двумя выполнениями startup probe в секундах
+      periodSeconds: 10
+      # -- Установить таймаут для startup probe в секундах
+      timeoutSeconds: 5
+
+    livenessProbe:
+      # -- Установить порог сбоев для liveness probe
+      failureThreshold: 5
+      httpGet:
+        # -- Установить HTTP-путь пода для liveness probe
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        # -- Установить HTTP-порт пода для использования в liveness probe
+        port: http
+      # -- Установить временной интервал между двумя выполнениями liveness probe в секундах
+      periodSeconds: 10
+      # -- Установить таймаут для liveness probe в секундах
+      timeoutSeconds: 5
+
+      # Если Startup Probe не поддерживается в вашем кластере Kubernetes, вы можете использовать "initialDelaySeconds" вместо этого.
+      # Это задерживает начальный liveness probe во время запуска Jenkins
+      # -- Установить начальную задержку для liveness probe в секундах
+      initialDelaySeconds:
+
+    readinessProbe:
+      # -- Установить порог сбоев для readiness probe
+      failureThreshold: 3
+      httpGet:
+        # -- Установить HTTP-путь пода для liveness probe
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        # -- Установить HTTP-порт пода для использования в readiness probe
+        port: http
+      # -- Установить временной интервал между двумя выполнениями readiness probe в секундах
+      periodSeconds: 10
+      # -- Установить таймаут для readiness probe в секундах
+      timeoutSeconds: 5
+
+      # Если Startup Probe не поддерживается в вашем кластере Kubernetes, вы можете использовать "initialDelaySeconds" вместо этого.
+      # Это задерживает начальный readiness probe во время запуска Jenkins
+      # -- Установить начальную задержку для readiness probe в секундах
+      initialDelaySeconds:
+
+  # Конфигурация PodDisruptionBudget
+  podDisruptionBudget:
+    # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+
+    # -- Включить конфигурацию Kubernetes Pod Disruption Budget
+    enabled: false
+
+    # Для Kubernetes v1.5+ используйте 'policy/v1beta1'
+    # Для Kubernetes v1.21+ используйте 'policy/v1'
+    # -- Версия API политики
+    apiVersion: "policy/v1beta1"
+
+    annotations: {}
+    labels: {}
+    # -- Количество подов, которые могут быть недоступны. Либо абсолютное число, либо процент
+    maxUnavailable: "0"
+
+  # -- Создать сервис прослушивателя агентов
+  agentListenerEnabled: true
+  # -- Порт прослушивания для агентов
+  agentListenerPort: 50000
+  # -- Хост-порт для прослушивания агентов
+  agentListenerHostPort:
+  # -- Порт узла для прослушивания агентов
+  agentListenerNodePort:
+
+  # ref: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
+  # -- Политика трафика для сервиса agentListener
+  agentListenerExternalTrafficPolicy:
+  # -- Разрешенные входящие IP для сервиса agentListener
+  agentListenerLoadBalancerSourceRanges:
+    - 0.0.0.0/0
+  # -- Отключенные протоколы агентов
+  disabledAgentProtocols:
+    - JNLP-connect
+    - JNLP2-connect
+  csrf:
+    defaultCrumbIssuer:
+      # -- Включить издатель крошек CSRF по умолчанию
+      enabled: true
+      # -- Включить совместимость с прокси
+      proxyCompatability: true
+
+  # Тип сервиса Kubernetes для сервиса JNLP агента
+  # agentListenerServiceType - это тип сервиса Kubernetes для сервиса JNLP агента,
+  # либо 'LoadBalancer', 'NodePort', или 'ClusterIP'
+  # Обратите внимание, если вы установите это в 'LoadBalancer', вы *должны* определить аннотации для его защиты. По умолчанию,
+  # это будет внешний балансировщик нагрузки, разрешающий входящий трафик 0.0.0.0/0, что представляет ОГРОМНЫЙ
+  # риск безопасности: https://github.com/kubernetes/charts/issues/1341
+  # -- Определяет, как открывать сервис agentListener
+  agentListenerServiceType: "ClusterIP"
+
+  # -- Аннотации для сервиса agentListener
+  agentListenerServiceAnnotations: {}
+
+  # Опционально, назначьте IP для LoadBalancer agentListenerService LoadBalancer
+  # Пользователи GKE: только региональные статические IP будут работать для Load balancer сервиса.
+  # -- Статический IP для LoadBalancer agentListener
+  agentListenerLoadBalancerIP:
+
+  # -- Следует ли включать устаревшую безопасность удаленного доступа
+  legacyRemotingSecurityEnabled: false
+
+  # Пример agentListener типа 'LoadBalancer' с аннотациями, защищающими его
+  # agentListenerServiceType: LoadBalancer
+  # agentListenerServiceAnnotations:
+  #   service.beta.kubernetes.io/aws-load-balancer-internal: "True"
+  #   service.beta.kubernetes.io/load-balancer-source-ranges: "172.0.0.0/8, 10.0.0.0/8"
+
+  # LoadBalancerSourcesRange - это список разрешенных значений CIDR, которые объединяются с ServicePort для
+  # установки разрешенных правил входящего трафика в группе безопасности, назначенной балансировщику нагрузки контроллера
+  # -- Разрешенные входящие IP-адреса
+  loadBalancerSourceRanges:
+    - 0.0.0.0/0
+
+  # -- Опционально назначить известный публичный IP балансировщика нагрузки
+  loadBalancerIP:
+
+  # Опционально настроить порт JMX. Это требует дополнительных javaOpts, например,
+  # javaOpts: >
+  #   -Dcom.sun.management.jmxremote.port=4000
+  #   -Dcom.sun.management.jmxremote.authenticate=false
+  #   -Dcom.sun.management.jmxremote.ssl=false
+  # jmxPort: 4000
+  # -- Открыть порт для статистики JMX
+  jmxPort:
+
+  # -- Опционально настроить другие порты для открытия в контейнере контроллера
+  extraPorts: []
+  # - name: BuildInfoProxy
+  #   port: 9000
+  #   targetPort: 9010 (Optional: Use to explicitly set targetPort if different from port)
+
+  # Плагины будут установлены во время запуска контроллера Jenkins
+  # -- Список плагинов Jenkins для установки. Если вы не хотите устанавливать плагины, установите `false`
+  installPlugins:
+    - kubernetes:4392.v19cea_fdb_5913
+    - workflow-aggregator:608.v67378e9b3db_1
+    - git:5.8.0
+    - configuration-as-code:2006.v001a_2ca_6b_574
+
+  # Если установлено false, Jenkins загрузит минимальную требуемую версию всех зависимостей.
+  # -- Загружать минимальную требуемую версию или последнюю версию всех зависимостей
+  installLatestPlugins: true
+
+  # -- Установить true для загрузки последней версии любого плагина, для которого запрошена последняя версия
+  installLatestSpecifiedPlugins: false
+
+  # -- Список плагинов для установки в дополнение к перечисленным в controller.installPlugins
+  additionalPlugins: []
+
+  # Без этого; при каждом перезапуске контроллера (Evicted и т.д.) он будет загружать обновления плагинов, что может вызвать проблемы.
+  # Обратите внимание, что для работы этого `persistence.enabled` должно быть установлено в `true`
+  # -- Инициализировать только при первой установке. Гарантирует, что плагины не обновляются непреднамеренно. Требует, чтобы `persistence.enabled` было установлено в `true`
+  initializeOnce: false
+
+  # Включить, чтобы всегда перезаписывать установленные плагины значениями 'controller.installPlugins' при обновлении или повторном развертывании.
+  # -- Перезаписывать установленные плагины при запуске
+  overwritePlugins: false
+
+  # Настраивает, должны ли плагины, входящие в состав `controller.image`, перезаписываться значениями 'controller.installPlugins' при обновлении или повторном развертывании.
+  # -- Перезаписывать плагины, уже установленные в образе контроллера
+  overwritePluginsFromImage: true
+
+  # Настраивает ограничения для именования проектов. Установите этот ключ в null или пусто, чтобы пропустить его в конфигурации по умолчанию.
+  projectNamingStrategy: standard
+
+  # Полезно с плагином ghprb. Плагин OWASP не устанавливается по умолчанию, пожалуйста, обновите controller.installPlugins.
+  # -- Включить разбор HTML с использованием плагина OWASP Markup Formatter (antisamy-markup-formatter)
+  enableRawHtmlMarkupFormatter: false
+
+  # Это игнорируется, если enableRawHtmlMarkupFormatter равно true
+  # -- Yaml форматтера разметки для использования
+  markupFormatter: plainText
+
+  # Используется для утверждения списка функций groovy в конвейерах, использующих плагин script-security. Может быть просмотрен в /scriptApproval
+  # -- Список функций groovy для утверждения
+  scriptApproval: []
+  #  - "method groovy.json.JsonSlurperClassic parseText java.lang.String"
+  #  - "new groovy.json.JsonSlurperClassic"
+
+  # -- Карта скриптов инициализации groovy для выполнения во время запуска контроллера Jenkins
+  initScripts: {}
+  #  test: |-
+  #    print 'adding global pipeline libraries, register properties, bootstrap jobs...'
+  # -- Имя существующего ConfigMap, содержащего скрипты инициализации
+  initConfigMap:
+
+  # 'name' - имя существующего секрета в том же namespace, что и jenkins,
+  # 'keyName' - имя одного из ключей внутри текущего секрета.
+  # 'name' и 'keyName' объединяются с '-' между ними, например:
+  # существующий секрет "secret-credentials" и ключ внутри него с именем "github-password" должен использоваться в JCasC как ${secret-credentials-github-password}
+  # 'name' и 'keyName' должны быть метками RFC 1123 в нижнем регистре, состоящими из строчных буквенно-цифровых символов или '-',
+  # и должны начинаться и заканчиваться буквенно-цифровым символом (например, 'my-name', или '123-abc')
+  # existingSecret существующий секрет "secret-credentials" и ключ внутри него с именем "github-username" должен использоваться в JCasC как ${github-username}
+  # При использовании existingSecret нет необходимости указывать keyName в additionalExistingSecrets.
+  existingSecret:
+
+  # -- Список дополнительных существующих секретов для монтирования
+  additionalExistingSecrets: []
+  # ref: https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
+  # additionalExistingSecrets:
+  #  - name: secret-name-1
+  #    keyName: username
+  #  - name: secret-name-1
+  #    keyName: password
+
+  # -- Список дополнительных секретов для создания и монтирования
+  additionalSecrets: []
+  # ref: https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
+  # additionalSecrets:
+  #  - name: nameOfSecret
+  #    value: secretText
+
+  # Генерировать ресурсы SecretClaim для создания секретов Kubernetes из HashiCorp Vault с использованием kube-vault-controller.
+  # 'name' - имя секрета, который будет создан в Kubernetes. Префикс полного имени Jenkins добавляется к этому значению.
+  # 'path' - полный путь к секрету в Vault
+  # 'type' - необязательный тип секрета Kubernetes. По умолчанию 'Opaque'
+  # 'renew' - необязательное время обновления секрета в секундах
+  # -- Список ресурсов `SecretClaim` для создания
+  secretClaims: []
+  # - name: secretName        # required
+  #   path: testPath          # required
+  #   type: kubernetes.io/tls # optional
+  #   renew: 60               # optional
+
+  # -- Имя конфигурации облака по умолчанию.
+  cloudName: "kubernetes"
+
+  # Ниже приведена реализация Jenkins Configuration as Code. Добавьте ключ под configScripts для каждой области конфигурации,
+  # где каждая соответствует плагину или разделу UI. Каждый ключ (до символа |) - это просто метка и может быть любым значением.
+  # Ключи используются только для того, чтобы дать разделу осмысленное имя. Единственное ограничение - они могут содержать только метки DNS RFC 1123
+  # символы: строчные буквы, цифры и дефисы. Ключи становятся именем файла конфигурации yaml на контроллере в
+  # /var/jenkins_home/casc_configs (по умолчанию) и будут обработаны плагином Configuration as Code. Строки после каждого |
+  # становятся содержимым файла конфигурации yaml. Первая строка после этого - корневой элемент JCasC, например, jenkins, credentials,
+  # и т.д. Лучшая ссылка - https://<jenkins_url>/configuration-as-code/reference. Пример ниже создает приветственное сообщение:
+  JCasC:
+    # -- Включает конфигурацию Jenkins по умолчанию через плагин configuration as code
+    defaultConfig: true
+
+    # Если true, init-контейнер удаляет все файлы конфигурации плагинов, и Jenkins Config as Code перезаписывает любую существующую конфигурацию
+    # -- Должен ли Jenkins Config as Code перезаписывать любую существующую конфигурацию
+    overwriteConfiguration: false
+    # -- Удаленные URL для файлов конфигурации.
+    configUrls: []
+    # - https://acme.org/jenkins.yaml
+    # -- Список скриптов Jenkins Config as Code
+    configScripts: {}
+    #  welcome-message: |
+    #    jenkins:
+    #      systemMessage: Welcome to our CI\CD server. This Jenkins is configured and managed 'as code'.
+
+    # Позволяет добавлять в раздел безопасности верхнего уровня JCasC. Для устаревших целей по умолчанию в chart включены конфигурации apiToken
+    # -- Раздел безопасности Jenkins Config as Code
+    security:
+      apiToken:
+        creationOfLegacyTokenEnabled: false
+        tokenGenerationOnCreationEnabled: false
+        usageStatisticsEnabled: true
+
+    # Игнорируется, если securityRealm определен в controller.JCasC.configScripts
+    # -- Раздел Security Realm Jenkins Config as Code
+    securityRealm: |-
+      local:
+        allowsSignup: false
+        enableCaptcha: false
+        users:
+        - id: "${chart-admin-username}"
+          name: "Jenkins Admin"
+          password: "${chart-admin-password}"
+
+    # Игнорируется, если authorizationStrategy определен в controller.JCasC.configScripts
+    # -- Раздел Authorization Strategy Jenkins Config as Code
+    authorizationStrategy: |-
+      loggedInUsersCanDoAnything:
+        allowAnonymousRead: false
+
+    # -- Аннотации для ConfigMap JCasC
+    configMapAnnotations: {}
+
+  # -- Спецификация пользовательского init-контейнера в формате raw-yaml
+  customInitContainers: []
+  # - name: custom-init
+  #   image: "alpine:3"
+  #   imagePullPolicy: Always
+  #   command: [ "uname", "-a" ]
+
+  sidecars:
+    configAutoReload:
+      # Если enabled: true, Jenkins Configuration as Code будет перезагружаться на лету без перезагрузки.
+      # Если false или не указано, изменения JCasC вызовут перезагрузку и будут применены только при последующем запуске.
+      # Авто-перезагрузка использует конечную точку http://<jenkins_url>/reload-configuration-as-code для повторного применения конфигурации при обнаружении изменений в
+      # configScripts.
+      # -- Включить авто-перезагрузку Jenkins Config as Code
+      enabled: true
+      image:
+        # -- Реестр образа, который запускает перезагрузку
+        registry: docker.io
+        # -- Репозиторий образа, который запускает перезагрузку
+        repository: kiwigrid/k8s-sidecar
+        # -- Тег образа, который запускает перезагрузку
+        tag: 1.30.7
+      imagePullPolicy: IfNotPresent
+      resources:
+        {}
+        #   limits:
+        #     cpu: 100m
+        #     memory: 100Mi
+        #   requests:
+      #     cpu: 50m
+      #     memory: 50Mi
+      # -- Включает дополнительные точки монтирования томов для контейнера авто-перезагрузки конфигурации
+      additionalVolumeMounts:
+        []
+        #   - name: auto-reload-config
+        #     mountPath: /var/config/logger
+      #   - name: auto-reload-logs
+      #     mountPath: /var/log/auto_reload
+      # -- Настройки логирования авто-перезагрузки конфигурации
+      logging:
+        # См. настройки по умолчанию https://github.com/kiwigrid/k8s-sidecar/blob/master/src/logger.py
+        configuration:
+          # -- Включает пользовательскую конфигурацию логов с использованием настроек ниже.
+          override: false
+          logLevel: INFO
+          formatter: JSON
+          logToConsole: true
+          logToFile: false
+          maxBytes: 1024
+          backupCount: 3
+
+      # -- Схема для использования при подключении к конечной точке configuration as code Jenkins
+      scheme: http
+      # -- Пропустить проверку TLS при подключении к конечной точке configuration as code Jenkins
+      skipTlsVerify: false
+
+      # -- Сколько ошибок, связанных с подключением, повторять
+      reqRetryConnect: 10
+      # -- Сколько секунд ждать перед обновлением config-maps/секретов (устанавливает METHOD=SLEEP на sidecar)
+      sleepTime:
+
+      # -- Источники переменных окружения для контейнера авто-перезагрузки Jenkins Config as Code
+      envFrom: []
+      # -- Переменные окружения для контейнера авто-перезагрузки Jenkins Config as Code
+      env: []
+      #   - name: REQ_TIMEOUT
+      #     value: "30"
+
+      # Значение порта SSH может быть установлено на любой неиспользуемый TCP-порт. По умолчанию, 1044, это нестандартный порт SSH, выбранный случайным образом.
+      # Используется только для перезагрузки конфигурации JCasC из sidecar-контейнера, работающего в поде контроллера Jenkins.
+      # Этот TCP-порт не будет открыт в поде (если вы специально не настроите это), поэтому Jenkins не будет
+      # доступен через SSH извне пода. Обратите внимание, если вы используете привилегии пода не-root (runAsUser & fsGroup),
+      # это должно быть > 1024:
+      sshTcpPort: 1044
+      # папка в поде, которая должна содержать собранные конфигурации:
+      folder: "/var/jenkins_home/casc_configs"
+
+      # Если указано, sidecar будет искать JCasC config-maps внутри этого namespace.
+      # В противном случае будет использоваться namespace, в котором работает sidecar.
+      # Также можно указать ALL для поиска во всех namespace:
+      # searchNamespace:
+      # -- Включить контекст безопасности контейнера
+      containerSecurityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+
+    # -- Настраивает дополнительные sidecar-контейнеры для контроллера Jenkins
+    additionalSidecarContainers: []
+    ## Пример ниже запускает клиент для https://smee.io как sidecar-контейнер рядом с Jenkins,
+    ## что позволяет запускать сборки за безопасным брандмауэром.
+    ## https://jenkins.io/blog/2019/01/07/webhook-firewalls/#triggering-builds-with-webhooks-behind-a-secure-firewall
+    ##
+    ## Примечание: Чтобы использовать его

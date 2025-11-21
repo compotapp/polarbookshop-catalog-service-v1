@@ -30,7 +30,7 @@ networks:
 
 services:
   pbs-config-service:
-    image: "goppot/pbs-config-service:1.0.0"
+    image: "compotapp/pbs-config-service:1.0.0"
     container_name: "pbs-config-service"
     ports:
       - 8888:8888
@@ -41,7 +41,7 @@ services:
     depends_on:
       - fluent-bit
       - tempo
-    image: "goppot/pbs-edge-service:3.0.0"
+    image: "compotapp/pbs-edge-service:3.0.0"
     container_name: "pbs-edge-service"
     ports:
       - 9000:9000
@@ -68,30 +68,37 @@ services:
         
   pbs-catalog-service:
     depends_on:
-      - fluent-bit
+#      - fluent-bit
       - pbs-postgres
-      - pbs-config-service
-      - tempo
-    image: "goppot/pbs-catalog-service:3.0.0"
+#      - pbs-config-service
+#      - tempo
+    image: "compotapp/pbs-catalog-service:1.0.0"
     container_name: "pbs-catalog-service"
     ports:
       - 9001:9001
     environment:
       - BPL_JVM_THREAD_COUNT=50
-      - SPRING_CLOUD_CONFIG_URI=http://pbs-config-service:8888
+      #- SPRING_CLOUD_CONFIG_URI=http://pbs-config-service:8888
       - SPRING_DATASOURCE_URL=jdbc:postgresql://pbs-postgres:5432/polardb_catalog
       - SPRING_PROFILES_ACTIVE=testdata
+        #ГОВОРИМ SPRING: "СМОТРИ НАСТРОЙКИ В /app/config"
+      - SPRING_CONFIG_ADDITIONAL-LOCATION=file:/app/config/
         #Поручает JVM запустить Java-агент OpenTelemetry из пути, по которому Cloud Native Buildpacks разместил зависимости приложения.
-      - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
+      #- JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
         #Имя приложения, используемое для маркировки следов, созданных службой каталогов.
-      - OTEL_SERVICE_NAME=catalog-service
+      #- OTEL_SERVICE_NAME=catalog-service
         #URL-адрес серверной части распределенной трассировки, поддерживающей протокол OpenTelemetry (OTLP).
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
-      - OTEL_METRICS_EXPORTER=none
-    logging:
-      driver: fluentd
-      options:
-        fluentd-address: 127.0.0.1:24224
+      #- OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      #- OTEL_METRICS_EXPORTER=none
+#    logging:
+#      driver: fluentd
+#      options:
+#        fluentd-address: 127.0.0.1:24224
+    volumes:
+      # "./config" - папка на нашем компьютере
+      # "/app/config" - папка внутри контейнера
+      # ":" - означает "соединить эти папки"
+      - ./config:/app/config
     networks:
       - pbs-network
 
@@ -101,7 +108,7 @@ services:
       - pbs-config-service
       - pbs-catalog-service
       - pbs-rabbitmq
-    image: "goppot/pbs-order-service:1.0.0"
+    image: "compotapp/pbs-order-service:1.0.0"
     container_name: pbs-order-service
     ports:
       - 9002:9002

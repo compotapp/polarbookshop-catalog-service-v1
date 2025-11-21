@@ -1,0 +1,11 @@
+polar:
+  greeting: Welcome to the book catalog from Kubernetes Kustomization!
+spring:
+  profiles:
+    active: starting
+  config:
+    import: "optional:file:/app/secrets/username,optional:file:/app/secrets/password"
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://pbs-postgres:5432/polardb_catalog

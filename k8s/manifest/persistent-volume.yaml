@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pbs-pv
+  labels:
+    type: local
+    app: demo-app
+spec:
+  # Емкость тома - объем дискового пространства
+  capacity:
+    storage: 1Gi  # 1 гигабайт
+
+  # Режимы доступа определяют, как Pod'ы могут использовать том
+  accessModes:
+    - ReadWriteOnce  # Том может быть монтирован для чтения и записи одним узлом
+
+  # Политика удержания данных
+  persistentVolumeReclaimPolicy: Retain
+  # Retain - данные сохраняются после удаления PVC
+  # Delete - том и данные удаляются автоматически
+  # Recycle - данные удаляются (устаревший вариант)
+
+  # Тип тома - hostPath использует директорию на узле Minikube
+  hostPath:
+    path: "/data/minikube-pv"  # Путь внутри Minikube VM/контейнера
+    type: DirectoryOrCreate    # Создать директорию, если не существует
+
+  # Узлы, на которых может быть размещен том (опционально)
+#  nodeAffinity:
+#    required:
+#      nodeSelectorTerms:
+#        - matchExpressions:
+#            - key: kubernetes.io/hostname
+#              operator: In
+#              values:
+#                - minikube  # Или minikube-m02, minikube-m03 для multi-node

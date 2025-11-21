@@ -1,0 +1,22 @@
+# Определяет Service для доступа к Jenkins извне кластера
+# Service обеспечивает стабильную сетевую конечную точку для доступа к Pod'ам
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service        # Имя Service
+  namespace: devops-tools      # Пространство имен
+  annotations:
+    # Аннотации для интеграции с Prometheus (мониторинг метрик)
+    prometheus.io/scrape: 'true'   # Разрешить Prometheus собирать метрики
+    prometheus.io/path:   '/'      # Путь к метрикам (обычно /metrics, но тут корень)
+    prometheus.io/port:   '8080'   # Порт для сбора метрик
+spec:
+  selector:
+    app: jenkins-server        # Выбирает Pod'ы с этой меткой (из Deployment)
+  type: NodePort               # Тип сервиса: открывает порт на каждом узле кластера
+  ports:
+    - port: 8080               # Порт сервиса внутри кластера (ClusterIP:8080)
+      targetPort: 8080         # Порт контейнера, на который перенаправляется трафик
+      nodePort: 32000          # Фиксированный порт на каждом узле кластера для доступа извне
+
+# kubectl apply -f k8s/jenkins/manifest1/jenkins-04-service.yaml
