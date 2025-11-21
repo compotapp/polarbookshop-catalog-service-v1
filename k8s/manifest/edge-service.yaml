@@ -35,7 +35,7 @@ spec:
               value: http://pbs-catalog-service:9001
             - name: ORDER_SERVICE_URL
               value: http://pbs-order-service:9002/orders
-            - name: SPRING_DATA_REDIS_HOST
+            - name: REDIS_HOST
               value: pbs-redis
 ---
 

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbs-catalog-service
+  labels:
+    app: pbs-catalog-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pbs-catalog-service
+  ports:
+    - protocol: TCP
+      port: 9001
+      targetPort: 9001

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: pbs-catalog-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: pbs-catalog-service
@@ -37,10 +37,6 @@ spec:
           env:
             - name: BPL_JVM_THREAD_COUNT
               value: "50"
-            - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://pbs-postgres/polardb_catalog
-            - name: SPRING_CLOUD_CONFIG_URI
-              value: http://pbs-config-service:8888
             - name: SPRING_PROFILES_ACTIVE
               value: testdata
           #Монтирует ConfigMap в контейнер как том.
@@ -82,22 +78,3 @@ spec:
           configMap:
             #ConfigMap, из которого создается том.
             name: pbs-catalog-config
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: pbs-catalog-service
-  labels:
-    app: pbs-catalog-service
-spec:
-  type: ClusterIP
-  selector:
-    app: pbs-catalog-service
-  ports:
-    - protocol: TCP
-      port: 9001
-      targetPort: 9001
-
-#kubectl apply -f k8s/manifest/catalog-service.yaml
