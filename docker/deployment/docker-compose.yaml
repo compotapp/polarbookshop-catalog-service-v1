@@ -107,8 +107,6 @@ services:
     networks:
       - pbs-network
 
-  # docker-compose -f docker/deployment/docker-compose.yaml up -d pbs-rabbitmq
-
   pbs-keycloak:
     image: quay.io/keycloak/keycloak:19.0
     container_name: "pbs-keycloak"

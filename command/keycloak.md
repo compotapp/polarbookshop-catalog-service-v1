@@ -69,23 +69,4 @@ cd /opt/keycloak/bin
 #secret=pbs-keycloak-secret - секрет для аутентификации клиента
 #redirectUris - разрешённые URL для перенаправления после аутентификации
 
-#PowerShell
-$tokenResponse = Invoke-RestMethod -Uri "http://localhost:8080/realms/PBS/protocol/openid-connect/token" `
->>   -Method POST `
->>   -Headers @{"Content-Type"="application/x-www-form-urlencoded"} `
->>   -Body "username=admin&password=password&grant_type=password&client_id=pbs-edge-service&client_secret=pbs-keycloak-secret"
-
-$newToken = $tokenResponse.access_token
-
-Write-Host "New Token: $newToken"
-
-PS C:\Users\user> Invoke-RestMethod -Uri "http://localhost:9001/books" `
->>   -Method POST `
->>   -Headers @{
->>     "Content-Type"="application/json"
->>     "Authorization"="Bearer $newToken"
->>   } `
->>   -Body '{"isbn":"1234567890", "title":"Test Book", "author":"Author", "price":9.99}'
-
-Invoke-RestMethod -Uri "http://localhost:9001/books" -Method GET
 
