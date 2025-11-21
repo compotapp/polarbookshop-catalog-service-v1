@@ -32,9 +32,13 @@ spring:
       mode: always
   config:
     #Импортирует данные конфигурации с сервера конфигурации, если они доступны
-    import: "optional:configserver:"
+    #import: "optional:configserver:"
+    #Прекращает импорт данных конфигурации из службы конфигурации.
+    import: ""
   cloud:
     config:
+      #Отключает интеграцию клиента Spring Cloud Config.
+      enabled: false
       uri: http://localhost:8888
       #Таймаут ожидания подключения к серверу конфигурации (мс)
       request-connect-timeout: 5000
@@ -58,8 +62,48 @@ management:
     web:
       exposure:
         #По умолчанию конечная точка не отображается, поэтому вам необходимо явно включить.
-        #Предоставляет конечную точку /actuator/refresh через HTTP
-        include: refresh
+        #Предоставляет конечные точки как работоспособности, так и показателей.
+        #Предоставляет конечную точку /actuator/refresh через HTTP.
+        #Предоставляет конечную точку /actuator/health через HTTP.
+        #Предоставляет конечную точку /actuator/metrics через HTTP.
+        #Предоставляет конечную точку /actuator/prometheus через HTTP.
+        include: refresh, health, info, heapdump, metrics, prometheus, flyway
+  endpoint:
+    #http :9001/actuator/health
+    health:
+      #Всегда показывает подробную информацию о состоянии приложения
+      show-details: always
+      #Всегда показывает информацию о компонентах, используемых приложением
+      show-components: always
+      probes:
+        #http :9001/actuator/health/readiness Когда он не готов, Kubernetes не будет отправлять трафик на экземпляр приложения.
+        #http :9001/actuator/health/liveness
+        #Включает поддержку зондов работоспособности
+        enabled: true
+    heapdump:
+      enabled: true
+  metrics:
+    tags:
+      #Добавляет общий тег Micrometer с именем приложения. В результате ко всем метрикам применяется метка Prometheus.
+      application: ${spring.application.name}
+  #http:9001/actuator/info
+  info:
+    env:
+      #Включает информацию об окружающей среде, полученную из "info". Характеристики
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
 
 polar:
   greeting: Welcome to the local block catalog!
+
+logging:
+  pattern:
+    #Включает имя приложения, идентификатор трассировки и идентификатор диапазона рядом с уровнем журнала (%5p).
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+
+#Любое свойство, начинающееся с "info". Префикс будет возвращен конечной точкой info.
+info:
+  system: Polar Bookshop

@@ -1,5 +1,9 @@
 name: Commit Stage
-on: push
+on: push  # Запускается при любом push
+env:      # Глобальные переменные
+  REGISTRY: ghcr.io
+  IMAGE_NAME: pbs/catalog-service
+  VERSION: latest
 jobs:
   build:
     name: Build and Test

@@ -40,6 +40,12 @@ FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
+# Скачиваем OpenTelemetry agent
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.17.0/opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+
+# Создаем каталог для конфиг мап
+RUN mkdir -p /app/config
+
 # Копируем собранный JAR из первого этапа
 COPY --from=builder /app/target/*.jar app.jar
 
@@ -65,3 +71,5 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 #docker tag pbs-catalog-service:1.0.0 goppot/pbs-config-catalog:1.0.0
 #docker push goppot/pbs-catalog-service:1.0.0
+
+#docker exec -it pbs-catalog-service /bin/bash
