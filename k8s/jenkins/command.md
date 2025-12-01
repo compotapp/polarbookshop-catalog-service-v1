@@ -1,7 +1,7 @@
 # Запустите Docker Desktop перед началом
 
 # Запустите Minikube с достаточными ресурсами
-minikube start --cpus=3 --memory=4096 --disk-size=20g --driver=docker --profile jenkins
+minikube start --cpus=4 --memory=4096 --disk-size=20g --driver=docker --profile jenkins
 
 # Включите необходимые аддоны
 minikube addons enable ingress --profile jenkins
